@@ -307,7 +307,7 @@ def load_processed_data(processed_dir):
 
 class Binarizer:
     def __init__(self):
-        self.data_dir = 'data/'
+        self.data_dir = '../../data/'
         
     def parse(self, video_id):
         processed_dir = os.path.join(self.data_dir, 'processed/videos', video_id)
@@ -329,7 +329,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ### Process Single Long Audio for NeRF dataset
     video_id = args.video_id
-    face_model = ParametricFaceModel(bfm_folder='deep_3drecon/BFM', 
+    face_model = ParametricFaceModel(bfm_folder='../../deep_3drecon/BFM', 
                 camera_distance=10, focal=1015)
     face_model.to("cpu")
     face3d_helper = Face3DHelper()
