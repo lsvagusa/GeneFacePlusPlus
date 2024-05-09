@@ -17,12 +17,12 @@ class SECC_Renderer(nn.Module):
         if rasterize_size is None:
             rasterize_size = 2*self.face_model.center 
         self.face_renderer = MeshRenderer(rasterize_fov=self.fov, znear=self.znear, zfar=self.zfar, rasterize_size=rasterize_size, use_opengl=False).cuda()
-        face_feat = np.load("deep_3drecon/ncc_code.npy", allow_pickle=True)
+        face_feat = np.load("../../deep_3drecon/ncc_code.npy", allow_pickle=True)
         self.face_feat = torch.tensor(face_feat.T).unsqueeze(0).to(device=device)
 
-        del_index_re = np.load('deep_3drecon/bfm_right_eye_faces.npy')
+        del_index_re = np.load('../../deep_3drecon/bfm_right_eye_faces.npy')
         del_index_re = del_index_re - 1
-        del_index_le = np.load('deep_3drecon/bfm_left_eye_faces.npy')
+        del_index_le = np.load('../../deep_3drecon/bfm_left_eye_faces.npy')
         del_index_le = del_index_le - 1
         face_buf_list = []
         for i in range(self.face_model.face_buf.shape[0]):
@@ -62,7 +62,7 @@ if __name__ == '__main__':
     import imageio
 
     renderer = SECC_Renderer(rasterize_size=512)
-    ret = np.load("data/processed/videos/May/vid_coeff_fit.npy", allow_pickle=True).tolist()
+    ret = np.load("../../data/processed/videos/May/vid_coeff_fit.npy", allow_pickle=True).tolist()
     idx = 6
     id = torch.tensor(ret['id']).cuda()[idx:idx+1]
     exp = torch.tensor(ret['exp']).cuda()[idx:idx+1]
