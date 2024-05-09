@@ -142,7 +142,7 @@ if __name__ == '__main__':
     ### Process Single Long Audio for NeRF dataset
     person_id = args.video_id
 
-    wav_16k_name = f"data/processed/videos/{person_id}/aud.wav"
-    out_name = f"data/processed/videos/{person_id}/aud_mel_f0.npy"
+    wav_16k_name = f"../../data/processed/videos/{person_id}/aud.wav"
+    out_name = f"../../data/processed/videos/{person_id}/aud_mel_f0.npy"
     extract_mel_f0_from_video_name(wav_16k_name, out_name)
     print(f"Saved at {out_name}")
