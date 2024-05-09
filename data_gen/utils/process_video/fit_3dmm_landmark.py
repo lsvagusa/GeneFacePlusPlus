@@ -24,7 +24,7 @@ from deep_3drecon.secc_renderer import SECC_Renderer
 from utils.commons.os_utils import multiprocess_glob
 
 
-face_model = ParametricFaceModel(bfm_folder='deep_3drecon/BFM', 
+face_model = ParametricFaceModel(bfm_folder='../../deep_3drecon/BFM', 
             camera_distance=10, focal=1015, keypoint_mode='mediapipe')
 face_model.to(torch.device("cuda:0"))
 
@@ -375,7 +375,7 @@ def fit_3dmm_for_a_video(
         from utils.visualization.vis_cam3d.camera_pose_visualizer import CameraPoseVisualizer
         from data_util.face3d_helper import Face3DHelper
         from data_gen.utils.process_video.extract_blink import get_eye_area_percent
-        face3d_helper = Face3DHelper('deep_3drecon/BFM', keypoint_mode='mediapipe')
+        face3d_helper = Face3DHelper('../../deep_3drecon/BFM', keypoint_mode='mediapipe')
 
         t = coeff_dict['exp'].shape[0]
         if len(coeff_dict['id']) == 1:
@@ -529,7 +529,7 @@ if __name__ == '__main__':
     random.seed(args.seed)
     random.shuffle(vid_names)
 
-    face_model = ParametricFaceModel(bfm_folder='deep_3drecon/BFM', 
+    face_model = ParametricFaceModel(bfm_folder='../../deep_3drecon/BFM', 
                 camera_distance=10, focal=1015, keypoint_mode=args.keypoint_mode)
     face_model.to(torch.device("cuda:0"))
     secc_renderer = SECC_Renderer(512)
