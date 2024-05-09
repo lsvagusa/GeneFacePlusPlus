@@ -26,7 +26,7 @@ class SH:
 
 class ParametricFaceModel:
     def __init__(self, 
-                bfm_folder='./BFM', 
+                bfm_folder='deep_3drecon/BFM/', 
                 recenter=True,
                 camera_distance=10.,
                 init_lit=np.array([
@@ -37,8 +37,8 @@ class ParametricFaceModel:
                 is_train=True,
                 default_name='BFM_model_front.mat',
                 keypoint_mode='mediapipe'):
-        
-        model = loadmat(os.path.join(bfm_folder, default_name))
+        print(f"THE BFM FOLDER IS: {bfm_folder}\n\n")
+        model = loadmat(os.path.join("../../", bfm_folder, default_name))
         # mean face shape. [3*N,1]
         self.mean_shape = model['meanshape'].astype(np.float32)
         # identity basis. [3*N,80]
@@ -55,7 +55,7 @@ class ParametricFaceModel:
         self.face_buf = model['tri'].astype(np.int64) - 1
         # vertex indices for 68 landmarks. starts from 0. [68,1]
         if keypoint_mode == 'mediapipe':
-            self.keypoints = np.load("deep_3drecon/BFM/index_mp468_from_mesh35709.npy").astype(np.int64)
+            self.keypoints = np.load("../../deep_3drecon/BFM/index_mp468_from_mesh35709.npy").astype(np.int64)
             unmatch_mask = self.keypoints < 0
             self.keypoints[unmatch_mask] = 0
         else:
