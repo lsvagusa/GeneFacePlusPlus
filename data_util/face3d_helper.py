@@ -8,7 +8,7 @@ from deep_3drecon.deep_3drecon_models.bfm import perspective_projection
 
 
 class Face3DHelper(nn.Module):
-    def __init__(self, bfm_dir='deep_3drecon/BFM', keypoint_mode='lm68', use_gpu=True):
+    def __init__(self, bfm_dir='../../deep_3drecon/BFM/', keypoint_mode='lm68', use_gpu=True):
         super().__init__()
         self.keypoint_mode = keypoint_mode # lm68 | mediapipe
         self.bfm_dir = bfm_dir
@@ -16,6 +16,7 @@ class Face3DHelper(nn.Module):
         if use_gpu: self.to("cuda")
             
     def load_3dmm(self):
+        print(f"THE BFM FOLDER IS: {self.bfm_dir}\n\n")
         model = loadmat(os.path.join(self.bfm_dir, "BFM_model_front.mat"))
         self.register_buffer('mean_shape',torch.from_numpy(model['meanshape'].transpose()).float()) # mean face shape. [3*N, 1], N=35709, xyz=3, ==> 3*N=107127
         mean_shape = self.mean_shape.reshape([-1, 3])
@@ -31,7 +32,7 @@ class Face3DHelper(nn.Module):
         self.register_buffer('point_buf',torch.from_numpy(model['point_buf']).float()) # triangle indices for each vertex that lies in. starts from 1. [N,8] (1-F)
         self.register_buffer('face_buf',torch.from_numpy(model['tri']).float()) # vertex indices in each triangle. starts from 1. [F,3] (1-N)
         if self.keypoint_mode == 'mediapipe':
-            self.register_buffer('key_points', torch.from_numpy(np.load("deep_3drecon/BFM/index_mp468_from_mesh35709.npy").astype(np.int64)))
+            self.register_buffer('key_points', torch.from_numpy(np.load("../../deep_3drecon/BFM/index_mp468_from_mesh35709.npy").astype(np.int64)))
             unmatch_mask = self.key_points < 0
             self.key_points[unmatch_mask] = 0
         else:
@@ -280,8 +281,8 @@ if __name__ == '__main__':
     
     font = cv2.FONT_HERSHEY_SIMPLEX
 
-    face_mesh_helper = Face3DHelper('deep_3drecon/BFM')
-    coeff_npy = 'data/coeff_fit_mp/crop_nana_003_coeff_fit_mp.npy'
+    face_mesh_helper = Face3DHelper('../../deep_3drecon/BFM')
+    coeff_npy = '../../data/coeff_fit_mp/crop_nana_003_coeff_fit_mp.npy'
     coeff_dict = np.load(coeff_npy, allow_pickle=True).tolist()
     lm3d = face_mesh_helper.reconstruct_lm2d(torch.tensor(coeff_dict['id']).cuda(), torch.tensor(coeff_dict['exp']).cuda(), torch.tensor(coeff_dict['euler']).cuda(), torch.tensor(coeff_dict['trans']).cuda() )
 
