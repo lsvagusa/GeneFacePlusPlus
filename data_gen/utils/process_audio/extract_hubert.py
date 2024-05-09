@@ -87,8 +87,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     ### Process Single Long Audio for NeRF dataset
     person_id = args.video_id
-    wav_16k_name = f"data/processed/videos/{person_id}/aud.wav"
-    hubert_npy_name = f"data/processed/videos/{person_id}/aud_hubert.npy"
+    wav_16k_name = f"../../data/processed/videos/{person_id}/aud.wav"
+    hubert_npy_name = f"../../data/processed/videos/{person_id}/aud_hubert.npy"
     speech_16k, _ = sf.read(wav_16k_name)
     hubert_hidden = get_hubert_from_16k_speech(speech_16k)
     np.save(hubert_npy_name, hubert_hidden.detach().numpy())
