@@ -115,20 +115,16 @@ def inject_blink_to_lm68(lm68, opened_eye_area_percent=0.6, closed_eye_area_perc
 
 
 class GeneFace2Infer:
-    def __init__(self, audio2secc_dir, postnet_dir, head_model_dir, torso_model_dir, device=None):
+    def __init__(self, audio2secc_dir, postnet_dir, device=None):
         if device is None:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.audio2secc_dir = audio2secc_dir
         self.postnet_dir = postnet_dir
-        self.head_model_dir = head_model_dir
-        self.torso_model_dir = torso_model_dir
         self.audio2secc_model = self.load_audio2secc(audio2secc_dir)
         self.postnet_model = self.load_postnet(postnet_dir)
-        self.secc2video_model = self.load_secc2video(head_model_dir, torso_model_dir)
         self.audio2secc_model.to(device).eval()
         if self.postnet_model is not None:
             self.postnet_model.to(device).eval()
-        self.secc2video_model.to(device).eval()
         self.seg_model = MediapipeSegmenter()
         self.secc_renderer = SECC_Renderer(512)
         self.face3d_helper = Face3DHelper(keypoint_mode='mediapipe', use_gpu=True)
@@ -161,37 +157,47 @@ class GeneFace2Infer:
         load_ckpt(self.model, f"{postnet_dir}", steps=20000, model_name='model', strict=True)
         return self.model
 
-    def load_secc2video(self, head_model_dir, torso_model_dir):
-
-        if torso_model_dir != '':
-            set_hparams(f"{os.path.dirname(torso_model_dir) if os.path.isfile(torso_model_dir) else torso_model_dir}/config.yaml")
-            self.secc2video_hparams = copy.deepcopy(hparams)
-            if hparams.get("with_sr"):
-                model = RADNeRFTorsowithSR(hparams)
-            else:
-                model = RADNeRFTorso(hparams)
-            load_ckpt(model, f"{torso_model_dir}", model_name='model', strict=True)
-        else:
-            set_hparams(f"{os.path.dirname(head_model_dir) if os.path.isfile(head_model_dir) else head_model_dir}/config.yaml")
-            self.secc2video_hparams = copy.deepcopy(hparams)
-            if hparams.get("with_sr"):
-                model = RADNeRFwithSR(hparams)
-            else:
-                model = RADNeRF(hparams)
-            load_ckpt(model, f"{head_model_dir}", model_name='model', strict=True)
-        self.dataset_cls = RADNeRFDataset # the dataset only provides head pose 
-        self.dataset = self.dataset_cls('trainval', training=False)
-        eye_area_percents = torch.tensor(self.dataset.eye_area_percents)
-        self.closed_eye_area_percent = torch.quantile(eye_area_percents, q=0.03).item()
-        self.opened_eye_area_percent = torch.quantile(eye_area_percents, q=0.97).item()
+    def load_secc2video(self, head_model_dir, torso_model_dir, binary_file_name, torso_config_dir=None):
         try:
-            model = torch.compile(model)
+            if torso_model_dir != '':
+                config_path = torso_config_dir if torso_config_dir else f"{os.path.dirname(torso_model_dir) if os.path.isfile(torso_model_dir) else torso_model_dir}"
+                set_hparams(f"{config_path}/config.yaml")
+                self.secc2video_hparams = copy.deepcopy(hparams)
+                if hparams.get("with_sr"):
+                    model = RADNeRFTorsowithSR(hparams)
+                else:
+                    model = RADNeRFTorso(hparams)
+                load_ckpt(model, f"{torso_model_dir}", model_name='model', strict=True)
+            else:
+                set_hparams(f"{os.path.dirname(head_model_dir) if os.path.isfile(head_model_dir) else head_model_dir}/config.yaml")
+                self.secc2video_hparams = copy.deepcopy(hparams)
+                if hparams.get("with_sr"):
+                    model = RADNeRFwithSR(hparams)
+                else:
+                    model = RADNeRF(hparams)
+                load_ckpt(model, f"{head_model_dir}", model_name='model', strict=True)
+            self.dataset_cls = RADNeRFDataset
+            self.dataset = self.dataset_cls('trainval', binary_file_name, training=False)
+            eye_area_percents = torch.tensor(self.dataset.eye_area_percents)
+            self.closed_eye_area_percent = torch.quantile(eye_area_percents, q=0.03).item()
+            self.opened_eye_area_percent = torch.quantile(eye_area_percents, q=0.97).item()
+            try:
+                model = torch.compile(model)
+            except:
+                traceback.print_exc()
         except:
             traceback.print_exc()
         return model
 
+
     def infer_once(self, inp):
         self.inp = inp
+        head_model_dir = self.inp['head_ckpt'] 
+        torso_model_dir = self.inp['torso_ckpt']
+        binary_file_name = self.inp['binary_file_name']
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.secc2video_model = self.load_secc2video(head_model_dir, torso_model_dir, binary_file_name)
+        self.secc2video_model.to(device).eval()
         samples = self.prepare_batch_from_inp(inp)
         out_name = self.forward_system(samples, inp)
         return out_name
@@ -524,16 +530,12 @@ class GeneFace2Infer:
         return inp['out_name']
 
     @classmethod
-    def example_run(cls, inp=None):
-        inp_tmp = {
-            'drv_audio_name': 'data/raw/val_wavs/zozo.wav',
-            'src_image_name': 'data/raw/val_imgs/Macron.png'
-            }
-        if inp is not None:
-            inp_tmp.update(inp)
-        inp = inp_tmp
-
-        infer_instance = cls(inp['a2m_ckpt'], inp['postnet_ckpt'], inp['head_ckpt'], inp['torso_ckpt'])
+    def run(cls, inp=None):
+        
+        if inp is None:
+            print("ERROR: Arguments for run not provided.")
+            return
+        infer_instance = cls(inp['a2m_ckpt'], inp['postnet_ckpt'])
         infer_instance.infer_once(inp)
 
     ##############
@@ -590,4 +592,4 @@ if __name__ == '__main__':
             }
     if args.fast:
         inp['raymarching_end_threshold'] = 0.05
-    GeneFace2Infer.example_run(inp)
+    GeneFace2Infer.run(inp)
